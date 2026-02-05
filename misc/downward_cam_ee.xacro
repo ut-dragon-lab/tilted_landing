@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="downward_cam_end_effector" params="ee_mount_link robot_ns">
+
+    <link name="downward_cam_link">
+      <inertial>
+        <mass value="0.001"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+      </inertial>
+      </link>
+
+    <joint name="mount_to_downward_cam" type="fixed">
+      <parent link="${ee_mount_link}"/>
+      <child link="downward_cam_link"/>
+      <origin xyz="0 0 -0.27" rpy="0 ${pi} ${-pi/2}"/>
+    </joint>
+
+    <link name="downward_cam_optical_frame"/>
+    <joint name="downward_cam_optical_joint" type="fixed">
+      <parent link="downward_cam_link"/>
+      <child link="downward_cam_optical_frame"/>
+      <origin xyz="0 0 0" rpy="0 ${-pi/2} ${pi/2}"/>
+    </joint>
+
+    <joint name="cam_to_ee_contact" type="fixed">
+      <parent link="downward_cam_link"/>
+      <child link="ee_contact"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <gazebo reference="downward_cam_optical_frame">
+      <sensor type="camera" name="downward_camera_sensor">
+        <update_rate>30.0</update_rate>
+        <camera name="head">
+          <horizontal_fov>1.57</horizontal_fov>
+          <image>
+            <width>1280</width>
+            <height>720</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.02</near>
+            <far>300</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
+        </camera>
+        <plugin name="downward_cam_controller" filename="libgazebo_ros_camera.so">
+          <robotNamespace>${robot_ns}</robotNamespace>
+          <alwaysOn>true</alwaysOn>
+          <updateRate>30.0</updateRate>
+          <cameraName>downward_cam</cameraName>
+          <imageTopicName>image_raw</imageTopicName>
+          <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+          <frameName>${robot_ns}/downward_cam_link</frameName>
+          <hackBaseline>0.0</hackBaseline>
+          <distortionK1>0.0</distortionK1>
+          <distortionK2>0.0</distortionK2>
+          <distortionK3>0.0</distortionK3>
+          <distortionT1>0.0</distortionT1>
+          <distortionT2>0.0</distortionT2>
+        </plugin>
+      </sensor>
+    </gazebo>
+
+  </xacro:macro>
+</robot>
