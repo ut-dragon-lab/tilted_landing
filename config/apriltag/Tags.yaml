@@ -1,0 +1,13 @@
+standalone_tags:
+  [
+  {id: 0, size: 0.16, name: land_mark},
+#  {id: 1, size: 0.5, name: drone_board_01},
+  ]
+
+publish_tf: true
+
+tag_bundles:
+  [
+
+  ]
+
