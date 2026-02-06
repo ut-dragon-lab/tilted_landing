@@ -12,9 +12,10 @@
       </link>
 
     <joint name="mount_to_downward_cam" type="fixed">
-      <parent link="${ee_mount_link}"/>
+<!--      <parent link="${ee_mount_link}"/>-->
+      <parent link="main_body"/>
       <child link="downward_cam_link"/>
-      <origin xyz="0 0 -0.27" rpy="0 ${pi} ${-pi/2}"/>
+      <origin xyz="0 0 -0.065" rpy="0 ${pi} ${-pi/2}"/>
     </joint>
 
     <link name="downward_cam_optical_frame"/>
