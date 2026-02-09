@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <launch>
-  <arg name="camera_dev" default="/dev/aerial_camera" />
+  <arg name="camera_dev" default="/dev/video0" />
   <arg name="image_width" default="1280" />
   <arg name="image_height" default="720" />
   <arg name="robot_ns" default="beetle1" />
@@ -14,11 +14,11 @@
       <param name="image_width" value="$(arg image_width)" />
       <param name="image_height" value="$(arg image_height)" />
       <param name="pixel_format" value="mjpeg" />
-      <param name="color_format" value="yuv420p" />
+      <param name="color_format" value="yuv422p" />
       <param name="framerate" value="30"/>
       <param name="camera_frame_id" value="$(arg robot_ns)/downward_cam_link" />
       <param name="io_method" value="mmap"/>
-      <param name="camera_info_url" value="file://$(find tilted_landing)/config/camera_info/calibration.yaml" />
+      <param name="camera_info_url" value="file://$(find tilted_landing)/config/camera_info/calibration_gs.yaml" />
     </node>
     
     <!-- image proc -->

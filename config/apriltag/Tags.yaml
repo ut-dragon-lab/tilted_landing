@@ -1,13 +1,14 @@
 standalone_tags:
   [
-  {id: 0, size: 0.16, name: land_mark},
+  {id: 0, size: 0.028, name: small_tag},
 #  {id: 1, size: 0.5, name: drone_board_01},
   ]
 
 publish_tf: true
 
 tag_bundles:
-  [
-
-  ]
-
+- name: 'land_mark_bundle'  # Nome do frame TF que será gerado
+  layout:
+    - {id: 1, size: 0.15, x: 0.0, y: 0.0, z: 0.0, qw: 1.0, qx: 0.0, qy: 0.0, qz: 0.0}
+    - {id: 2, size: 0.06, x: 0.0, y: 0.11, z: 0.0, qw: 1.0, qx: 0.0, qy: 0.0, qz: 0.0}
+    - {id: 3,  size: 0.06, x: 0.0,  y: -0.11, z: 0.0, qw: 1.0, qx: 0.0, qy: 0.0, qz: 0.0}
