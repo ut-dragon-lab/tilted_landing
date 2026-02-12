@@ -6,8 +6,8 @@
   <arg name="camera_name" default="/$(arg robot_name)/downward_cam" />
   <arg name="image_topic" default="image_raw" />
 
-  <rosparam command="load" file="$(find beetle_omni)/config/BaseAprilTag.yaml" ns="$(arg node_namespace)" />
-  <rosparam command="load" file="$(find beetle_omni)/config/apriltag/tags.yaml" ns="$(arg node_namespace)" />
+  <rosparam command="load" file="$(find tilted_landing)/config/BaseAprilTag.yaml" ns="$(arg node_namespace)" />
+  <rosparam command="load" file="$(find tilted_landing)/config/apriltag/Tags2.yaml" ns="$(arg node_namespace)" />
 
   <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="$(arg node_namespace)" clear_params="true" output="screen" launch-prefix="$(arg launch_prefix)" >
     <remap from="image_rect" to="$(arg camera_name)/$(arg image_topic)" />
