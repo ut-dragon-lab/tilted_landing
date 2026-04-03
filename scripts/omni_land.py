@@ -7,6 +7,7 @@ Architectural Decision: Model-View-Controller (MVC) Pattern.
 - Controller: Main loop and TagObserver coordinate sensor fusion, data publishing, and state transitions.
 """
 
+import sys
 import rospy
 import numpy as np
 import tf2_ros
@@ -19,6 +20,8 @@ from geometry_msgs.msg import PoseStamped, Point, Quaternion
 from aerial_robot_planning.pub_mpc_joint_traj import MPCTrajPtPub
 from aerial_robot_planning.trajs import BaseTraj
 
+import pandas as pd
+from gazebo_msgs.msg import ModelStates
 # ==========================================================
 # CONFIGURATION PARAMETERS (Global Constants)
 # ==========================================================
@@ -159,12 +162,78 @@ class TagObserver:
             return pos, quat
         except: return None
 
+class DataLogger:
+    def __init__(self, robot_name="beetle1", pitch_angle=0.0):
+        self.data = []
+        self.robot_name = robot_name
+        self.pitch_angle = float(pitch_angle)
+        self.real_pos = np.zeros(3)
+        self.platform_pos = np.zeros(3)
+        
+        # Assina o Ground Truth absoluto do Gazebo
+        rospy.Subscriber("/gazebo/model_states", ModelStates, self.gazebo_cb)
+
+    def gazebo_cb(self, msg):
+        try:
+            if self.robot_name in msg.name:
+                idx_drone = msg.name.index(self.robot_name)
+                self.real_pos[0] = msg.pose[idx_drone].position.x
+                self.real_pos[1] = msg.pose[idx_drone].position.y
+                self.real_pos[2] = msg.pose[idx_drone].position.z
+                
+            if "floating_landing_platform" in msg.name:
+                idx_plat = msg.name.index("floating_landing_platform")
+                self.platform_pos[0] = msg.pose[idx_plat].position.x
+                self.platform_pos[1] = msg.pose[idx_plat].position.y
+                self.platform_pos[2] = msg.pose[idx_plat].position.z
+        except ValueError:
+            pass 
+
+    def log_step(self, t, traj_model, phase):
+        ref_pt = traj_model.get_3d_pt(t)[:3]
+        
+        self.data.append({
+            'time': t,
+            'phase': phase,
+            'ref_x': ref_pt[0], 'ref_y': ref_pt[1], 'ref_z': ref_pt[2],
+            'real_x': self.real_pos[0], 'real_y': self.real_pos[1], 'real_z': self.real_pos[2],
+            'plat_x': self.platform_pos[0], 'plat_y': self.platform_pos[1], 'plat_z': self.platform_pos[2]
+        })
+
+    def save_csv(self, filename="landing_data.csv"):
+        if len(self.data) == 0: return
+        
+        df = pd.DataFrame(self.data)
+        
+        # Pega a ultima posicao para calcular o erro final projetado
+        last = df.iloc[-1]
+        
+        dx = last['real_x'] - last['plat_x']
+        dy = last['real_y'] - last['plat_y']
+        dz = last['real_z'] - last['plat_z']
+        
+        # Projeta o erro no plano da rampa
+        theta = -self.pitch_angle 
+        x_err = dx * np.cos(theta) + dz * np.sin(theta)
+        y_err = dy
+        final_error = np.sqrt(x_err**2 + y_err**2)
+        
+        df['final_error_projected'] = final_error
+        df.to_csv(filename, index=False)
+        rospy.loginfo(f"Log do pouso salvo em: {filename} | Erro final: {final_error:.4f}m")
+
 # ==========================================================
 # MISSION EXECUTION
 # ==========================================================
 def run_omni_beetle_mission():
     rospy.init_node('omni_beetle_landing_mission')
+    
+    # sys.argv[0] eh o nome do script (omni_land.py)
+    log_filename = sys.argv[1] if len(sys.argv) > 1 else "dados_pouso.csv"
+    pitch_val = sys.argv[2] if len(sys.argv) > 2 else 0.0
+
     observer = TagObserver()
+    logger = DataLogger(ROBOT_NAME, pitch_val)
     
     # Status Publisher
     status_pub = rospy.Publisher(f"/{ROBOT_NAME}/tilted_landing/status", String, queue_size=1, latch=True)
@@ -183,7 +252,13 @@ def run_omni_beetle_mission():
     approach_traj = StartPointApproachTraj(p_init)
     mpc_interface = MPCTrajPtPub(ROBOT_NAME, approach_traj)
 
+    t_start_phase1 = rospy.Time.now().to_sec()
+
     while not rospy.is_shutdown():
+        # Calculo do tempo relativo da trajetoria
+        t_current = rospy.Time.now().to_sec() - t_start_phase1
+        logger.log_step(t_current, approach_traj, phase=1)
+
         tag = observer.get_smoothed_transform()
         if tag:
             approach_traj.update_tag(tag[0], tag[1])
@@ -205,17 +280,24 @@ def run_omni_beetle_mission():
     
     mpc_interface.traj = landing_model 
     mpc_interface.start_time = rospy.Time.now().to_sec()
+    
+    t_start_phase2 = rospy.Time.now().to_sec() ### NOVO ###
+    duration = (TOTAL_DESCENT_DIST / DESCENT_SPEED) + PRESS_DURATION
 
-    # Wait for calculated descent duration + pressure phase
-    rospy.sleep((TOTAL_DESCENT_DIST / DESCENT_SPEED) + PRESS_DURATION)
+    # Substituindo o rospy.sleep() por um loop que loga os dados enquanto espera ### NOVO BLOCO ###
+    while (rospy.Time.now().to_sec() - t_start_phase2) < duration and not rospy.is_shutdown():
+        t_current = rospy.Time.now().to_sec() - t_start_phase2
+        logger.log_step(t_current, landing_model, phase=2)
+        rospy.sleep(0.05)
     
     # --- CUTOFF: TRIGGERING LANDING COMMAND ---
     status_pub.publish("CUTOFF")
     rospy.loginfo("Touchdown detected. Triggering force landing.")
     for _ in range(10):
         force_land_pub.publish(Empty())
-        # halt_pub.publish(Empty()) # Uncomment to swap force_land with halt
         rospy.sleep(0.1)
+    
+    logger.save_csv(log_filename)
 
     # --- SUCCESS ---
     status_pub.publish("SUCCEDED")

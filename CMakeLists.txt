@@ -24,7 +24,7 @@ catkin_package(
 )
 
 catkin_install_python(PROGRAMS
-  scripts/landing_smash.py
+  scripts/omni_land.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

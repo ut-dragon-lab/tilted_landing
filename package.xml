@@ -24,6 +24,8 @@
   <depend>aerial_robot_msgs</depend>
   <depend>aerial_robot_planning</depend>
 
+  <depend>apriltag_ros</depend>
+
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-scipy</exec_depend>
   
