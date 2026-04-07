@@ -10,8 +10,7 @@ NOISE_X=( 0.12 -0.05  0.08 -0.15  0.03  0.22 -0.11  0.01 -0.09  0.17 -0.21  0.06
 NOISE_Y=(-0.08  0.14 -0.02 -0.11  0.09  0.04 -0.18  0.21 -0.06 -0.12  0.15  0.01 -0.09  0.19  0.07 -0.14  0.11 -0.03 -0.20  0.05)
 
 # 0, 15, 30, 45, 60, 75 graus em radianos
-# ANGULOS=(0.0 0.2618 0.5236 0.7854 1.0472 1.3090)
-ANGULOS=( 1.3090 )
+ANGULOS=(0.0 0.2618 0.5236 0.7854 1.0472 1.3090)
 
 WORLD_FILE="$HOME/ros/jsk_aerial_robot_ws/src/jsk_aerial_robot_dev/aerial_robot_simulation/gazebo_model/world/0066.world"
 TOPIC_PREFIX="/beetle1"
@@ -21,7 +20,7 @@ for PITCH in "${ANGULOS[@]}"; do
     echo "Iniciando testes para o angulo: $PITCH radianos"
     echo "================================================="
 
-    for RUN in {3..19}; do
+    for RUN in {0..19}; do
         echo "--> Rodada $((RUN+1))/20"
 
         # Calcula a nova posicao alvo somando o ruido usando awk
@@ -86,8 +85,7 @@ for PITCH in "${ANGULOS[@]}"; do
 
         echo "Limpando ambiente..."
         kill $SIM_PID $SIM_PID2
-        killall -9 gzserver gzclient roslaunch rosmaster
-	kill -9 $(pgrep rviz)
+        killall -9 $(pgrep rviz) gzserver gzclient roslaunch rosmaster
         sleep 5
     done
 done
